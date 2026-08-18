@@ -68,7 +68,8 @@ def render_html(listings: list[Listing]) -> str:
   body {{ font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
           margin: 0; padding: 1rem; background: #fff; color: #1a1a1a; }}
   h1 {{ font-size: 1.25rem; margin: 0 0 0.75rem; }}
-  .updated {{ font-size: 0.8rem; color: #666; margin-bottom: 1rem; }}
+  .updated {{ font-size: 0.8rem; color: #666; margin-bottom: 0.25rem; }}
+  .disclaimer {{ font-size: 0.75rem; font-style: italic; color: #888; margin-bottom: 1rem; }}
   table {{ width: 100%; border-collapse: collapse; font-size: 0.9rem; }}
   th, td {{ text-align: left; padding: 0.5rem 0.6rem; border-bottom: 1px solid #e2e2e2; vertical-align: top; }}
   th {{ background: #f5f5f5; position: sticky; top: 0; }}
@@ -83,12 +84,14 @@ def render_html(listings: list[Listing]) -> str:
     tr:hover {{ background: #1a1c20; }}
     a {{ color: #6cb2f2; }}
     .updated {{ color: #9aa0a6; }}
+    .disclaimer {{ color: #7a7f85; }}
   }}
 </style>
 </head>
 <body>
   <h1>{html.escape(PAGE_TITLE)}</h1>
-  <div class="updated">Updated {html.escape(now)} &middot; {len(listings)} listing(s) from Barnstormers.com</div>
+  <div class="updated">Updated {html.escape(now)} &middot; {len(listings)} listing(s)</div>
+  <div class="disclaimer">External listings are provided for informational purposes. Taildraggers.com is not affiliated with or endorsed by the originating listing sites. Listing information remains the responsibility of the original publisher. Clicking an external listing will take you to the source website.</div>
   <table>
     <thead>
       <tr><th>Title</th><th>Price</th><th>Location</th><th>Date Posted</th><th>Site Posted On</th></tr>
