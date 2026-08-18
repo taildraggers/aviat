@@ -8,7 +8,7 @@ import html
 import os
 
 from scraper import barnstormers
-from scraper.common import Listing, close_browser
+from scraper.common import Listing, close_browser, parse_listing_date
 
 OUTPUT_PATH = os.path.join(os.path.dirname(__file__), "docs", "index.html")
 PAGE_TITLE = "Other Aviat Ads on the Web"
@@ -32,7 +32,15 @@ def collect_listings() -> list[Listing]:
             continue
         seen.add(listing.key())
         unique.append(listing)
-    unique.sort(key=lambda l: (l.site, l.title.lower()))
+    # Newest posted first; listings with no parseable post date sort last,
+    # alphabetically among themselves.
+    def _sort_key(listing: Listing):
+        posted = parse_listing_date(listing.date_posted)
+        if posted is None:
+            return (1, 0, listing.title.lower())
+        return (0, -posted.toordinal(), listing.title.lower())
+
+    unique.sort(key=_sort_key)
     return unique
 
 

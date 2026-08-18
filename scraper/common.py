@@ -7,6 +7,7 @@ fetching is done through Playwright/Chromium instead of a plain HTTP client.
 """
 from __future__ import annotations
 
+import datetime as dt
 import json
 import re
 import time
@@ -118,6 +119,24 @@ def extract_location(text: str) -> str:
 def extract_date(text: str) -> str:
     m = DATE_LABEL_RE.search(text)
     return m.group(1).strip() if m else ""
+
+
+_DATE_POSTED_FORMATS = ("%B %d %Y", "%m/%d/%Y", "%m/%d/%y")
+
+
+def parse_listing_date(date_posted: str) -> dt.date | None:
+    """Parse the free-form 'Date Posted' string extract_date() produces
+    (e.g. 'August 16, 2026' or '8/16/2026') into a comparable date, or None
+    if it's missing/unparseable."""
+    if not date_posted:
+        return None
+    cleaned = date_posted.replace(",", "").strip()
+    for fmt in _DATE_POSTED_FORMATS:
+        try:
+            return dt.datetime.strptime(cleaned, fmt).date()
+        except ValueError:
+            continue
+    return None
 
 
 def extract_jsonld_objects(soup: BeautifulSoup) -> list[dict]:
