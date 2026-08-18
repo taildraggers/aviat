@@ -29,15 +29,15 @@ before publishing — see `TARGET_MODEL_PHRASES` in `scraper/barnstormers.py`.
   shares one generic `<title>`/`<h1>`; the final parsed title is checked
   against the allowlist again as a safety net.
 - On top of that brand allowlist, only whole-aircraft-for-sale listings are kept.
-  Each ad's title must state a model year and match a recognized Husky/Pitts/
-  Christen Eagle model (see `_extract_model` in `scraper/barnstormers.py`); titles
-  that read as parts, accessories, services, or raffles are dropped. Every
-  surviving listing's title is rewritten to a canonical **`YEAR MAKE MODEL`**
-  form - `Aviat` for Huskys, `Pitts` for the Pitts Special, `Christen` for the
+  Each ad's title must match a recognized Husky/Pitts/Christen Eagle model (see
+  `_extract_model` in `scraper/barnstormers.py`); titles that read as parts,
+  accessories, services, or raffles are dropped. Every surviving listing's title
+  is rewritten to a canonical **`YEAR MAKE MODEL`** form when the ad states a
+  model year, or just **`MAKE MODEL`** when it doesn't (a missing year isn't
+  disqualifying, since plenty of genuine ads simply don't state one in the
+  title) - `Aviat` for Huskys, `Pitts` for the Pitts Special, `Christen` for the
   Christen Eagle, since that's how each is actually branded (e.g. `1988 Aviat
-  Husky A-1`, `1995 Pitts S-2B`) - so the page reads consistently. A real side
-  effect: ads that never state a model year in the title can't be reformatted
-  and are dropped too, even if they're genuine aircraft.
+  Husky A-1`, `1995 Pitts S-2B`) - so the page reads consistently.
 - `main.py` runs the scraper, de-duplicates results, and renders them into
   `docs/index.html` titled **"Other Aviat Ads on the Web"**, with
   one row per listing: Title (linked to the original ad), Price, Location,
