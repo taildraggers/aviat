@@ -31,41 +31,6 @@ jobs:
       - name: Install Playwright Chromium
         run: playwright install --with-deps chromium
 
-      - name: Debug category page structure
-        run: |
-          python3 - <<'PYEOF'
-          import sys
-          sys.path.insert(0, ".")
-          from bs4 import BeautifulSoup
-          from scraper.common import fetch, close_browser
-
-          url = "https://www.barnstormers.com/category-24045-Aviat-Aircraft.html"
-          html = fetch(url)
-          close_browser()
-          if not html:
-              print("fetch failed")
-              sys.exit(0)
-
-          soup = BeautifulSoup(html, "lxml")
-          # Off-brand IDs we saw leak into the "Aviat" category in a prior run.
-          suspects = ["2065586", "2051838", "2050242", "2066453"]
-          # A confirmed genuine Aviat listing, for comparison.
-          genuine = "2067141"
-
-          for cid in suspects + [genuine]:
-              a = soup.find("a", href=lambda h: h and f"classified-{cid}-" in h)
-              if not a:
-                  print(f"--- {cid}: link not found on page ---")
-                  continue
-              print(f"--- {cid}: {a.get_text(strip=True)!r} ---")
-              node = a
-              for level in range(5):
-                  node = node.parent
-                  if node is None:
-                      break
-                  print(f"  ancestor[{level}] <{node.name} class={node.get('class')} id={node.get('id')}>")
-          PYEOF
-
       - name: Run scraper
         run: python main.py
 

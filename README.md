@@ -9,14 +9,25 @@ repo) and dropped: its search results are only reachable through an internal
 client-side widget (not a plain URL), which a headless browser can't drive
 reliably for an unattended daily job.
 
+Barnstormers' "Aviat Aircraft" category page turned out to be loosely curated:
+about 40% of the raw results were competing backcountry/aerobatic aircraft
+(CubCrafters, a Cessna 175, American Champion Decathlons) with no distinguishing
+HTML markup from the genuine listings. Results are filtered by title against
+an allowlist of Aviat product names (`aviat`, `husky`, `pitts`, `christen eagle`)
+before publishing — see `TARGET_MODEL_PHRASES` in `scraper/barnstormers.py`.
+
 ## How it works
 
 - `scraper/barnstormers.py` searches Barnstormers.com's Aviat Aircraft category for
-  listings, follows pagination, then visits each listing's detail page to pull
+  listings, follows pagination, then keeps only the ones whose URL slug matches
+  the Aviat product-name allowlist (Barnstormers builds each listing's URL
+  slug directly from the ad's own title, so this runs before any detail page
+  is fetched). For the matches, it visits each listing's detail page to pull
   out the price, location, and posted date (falling back to regex heuristics
   over the visible text since the site doesn't expose structured data). The
   title is derived from the listing URL's own SEO slug, since every detail page
-  shares one generic `<title>`/`<h1>`.
+  shares one generic `<title>`/`<h1>`; the final parsed title is checked
+  against the allowlist again as a safety net.
 - `main.py` runs the scraper, de-duplicates results, and renders them into
   `docs/index.html` titled **"Other Aviat Ads on the Web"**, with
   one row per listing: Title (linked to the original ad), Price, Location,
