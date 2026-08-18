@@ -5,6 +5,14 @@ competing backcountry/aerobatic aircraft (CubCrafters, Cessna 175, American
 Champion Decathlons) with no distinguishing HTML markup - same DOM structure
 as the genuine listings. So results are filtered by title against a small
 allowlist of Aviat product names before being published.
+
+On top of that brand allowlist, only whole-aircraft-for-sale listings are
+kept: each ad's title must state a model year and match a recognized Husky/
+Pitts/Christen Eagle model, and titles that look like parts/accessories/
+services/raffles are dropped. Surviving titles are rewritten to a canonical
+"YEAR MAKE MODEL" form - Aviat for Huskys, Pitts for the Pitts Special,
+Christen for the Christen Eagle, since those are how each is actually
+branded - so every listing follows the same format.
 """
 from __future__ import annotations
 
@@ -13,7 +21,14 @@ from urllib.parse import unquote, urljoin
 
 from bs4 import BeautifulSoup
 
-from .common import Listing, extract_date, extract_location, extract_price, fetch
+from .common import (
+    Listing,
+    extract_date,
+    extract_location,
+    extract_price,
+    fetch,
+    format_aircraft_title,
+)
 
 SITE_NAME = "Barnstormers.com"
 BASE = "https://www.barnstormers.com"
@@ -47,6 +62,29 @@ def _normalize(text: str) -> str:
 def _matches_target_models(title: str) -> bool:
     normalized = _normalize(title)
     return any(phrase in normalized for phrase in TARGET_MODEL_PHRASES)
+
+
+def _extract_model(title: str) -> tuple[str, str] | None:
+    normalized = _normalize(title)
+    if "husky" in normalized:
+        if re.search(r"a[\s-]?1[\s-]?c\b", normalized):
+            return "Aviat", "Husky A-1C"
+        if re.search(r"a[\s-]?1[\s-]?b\b", normalized):
+            return "Aviat", "Husky A-1B"
+        if re.search(r"a[\s-]?1\b", normalized):
+            return "Aviat", "Husky A-1"
+        return "Aviat", "Husky"
+    if "pitts" in normalized:
+        if re.search(r"s[\s-]?2b\b", normalized):
+            return "Pitts", "S-2B"
+        if re.search(r"s[\s-]?2s\b", normalized):
+            return "Pitts", "S-2S"
+        if re.search(r"s[\s-]?2c\b", normalized):
+            return "Pitts", "S-2C"
+        return "Pitts", "Special"
+    if "christen eagle" in normalized:
+        return "Christen", "Eagle"
+    return None
 
 
 def _title_from_url(url: str) -> str:
@@ -105,6 +143,12 @@ def _parse_detail_page(url: str, html: str) -> Listing | None:
         return None
 
     text = soup.get_text(" ", strip=True)
+
+    formatted_title = format_aircraft_title(title, text, _extract_model)
+    if not formatted_title:
+        return None
+    title = formatted_title
+
     price = extract_price(text)
     location = extract_location(text)
     date_posted = extract_date(text)

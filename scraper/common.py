@@ -135,6 +135,79 @@ def extract_jsonld_objects(soup: BeautifulSoup) -> list[dict]:
     return objects
 
 
+YEAR_RE = re.compile(r"(?<!\d)(19\d{2}|20\d{2})(?!\d)")
+LABELED_YEAR_RE = re.compile(r"\byear\W{0,6}(19\d{2}|20\d{2})\b", re.IGNORECASE)
+
+# Words that mark a listing as parts/accessories/services/raffles rather than
+# a whole aircraft for sale. Matched as whole words/phrases against the ad's
+# title only (not the full ad body, where they're too likely to appear as
+# incidental description text).
+EXCLUDE_KEYWORDS = [
+    "parts", "part", "wing", "wings", "wheel", "wheels", "float", "floats",
+    "strut", "struts", "gear leg", "gear legs", "landing gear",
+    "engine mount", "engine mounts", "prop", "props", "propeller",
+    "propellers", "cowl", "cowling", "cowlings", "tail cone", "elevator",
+    "rudder", "aileron", "ailerons", "flap", "flaps", "tank", "tanks",
+    "spinner", "spinners", "hinge", "hinges", "cushion", "cushions",
+    "seat", "seats", "door", "doors", "window", "windows", "carburetor",
+    "magneto", "magnetos", "battery", "starter", "alternator",
+    "instrument", "instruments", "avionics", "radio", "gps", "camshaft",
+    "cylinder", "cylinders", "crankshaft", "gasket", "gaskets", "bracket",
+    "brackets", "bushing", "spring", "springs", "housing", "mount",
+    "mounts", "kit", "kits", "manual", "manuals", "logbook", "logbooks",
+    "decal", "decals", "poster", "ski", "skis", "brake", "brakes",
+    "tire", "tires", "tube", "tubes", "empennage", "fuselage", "cabin",
+    "canopy", "windshield", "exhaust", "muffler", "harness", "wiring",
+    "panel", "yoke", "control column", "controls", "cable", "cables",
+    "throttle", "hardware", "hose", "hoses", "fitting", "fittings",
+    "bearing", "bearings", "tailwheel", "upholstery", "sump", "dipstick",
+    "connecting rods", "stc",
+    "raffle", "win a", "win an", "enter to win", "rental", "ferry pilot",
+    "flight training", "instruction", "insurance", "financing", "wanted",
+    "wtb", "consignment", "appraisal", "logistics",
+]
+
+
+def extract_listing_year(title: str, page_text: str = "") -> str | None:
+    """Pull a 4-digit model year from the title, falling back to a labeled
+    'Year: 19xx' field in the ad body if the title doesn't state one."""
+    match = YEAR_RE.search(title)
+    if match:
+        return match.group(1)
+    if page_text:
+        match = LABELED_YEAR_RE.search(page_text)
+        if match:
+            return match.group(1)
+    return None
+
+
+def is_non_aircraft_ad(title: str) -> bool:
+    """True if the title looks like a parts/accessory/service/raffle ad
+    rather than a whole aircraft for sale."""
+    normalized = re.sub(r"[-_]", " ", title.lower())
+    normalized = " " + re.sub(r"\s+", " ", normalized).strip() + " "
+    return any((" " + keyword + " ") in normalized for keyword in EXCLUDE_KEYWORDS)
+
+
+def format_aircraft_title(title: str, page_text: str, extract_model) -> str | None:
+    """Build a canonical 'YEAR MAKE MODEL' title, or return None if this
+    listing isn't a clean, identifiable whole-aircraft-for-sale ad.
+
+    extract_model(title) must return an (make, model) tuple, or None if no
+    recognized model is present in the title.
+    """
+    if is_non_aircraft_ad(title):
+        return None
+    year = extract_listing_year(title, page_text)
+    if not year:
+        return None
+    result = extract_model(title)
+    if not result:
+        return None
+    make, model = result
+    return f"{year} {make} {model}"
+
+
 @dataclass
 class Listing:
     title: str
